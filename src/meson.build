@@ -100,6 +100,7 @@ executable(
     include_directories: gtkwave_include_directories,
     c_args: warning_args,
     link_args: link_args,
+    win_subsystem: 'windows',
     install: true,
     install_rpath: install_rpath,
 )
