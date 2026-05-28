@@ -391,3 +391,21 @@ GwSignalListColors *gw_signal_list_colors_new_black_and_white(void)
 
     return self;
 }
+
+GwSignalListColors *gw_signal_list_colors_new_dark(void)
+{
+    GwSignalListColors *self = g_new0(GwSignalListColors, 1);
+
+    gw_color_init_from_hex(&self->white, "2a2a2a");  /* panel background */
+    gw_color_init_from_hex(&self->black, "e6e6e6");  /* text on unselected rows */
+    gw_color_init_from_hex(&self->ltgray, "333333"); /* unselected row bg */
+    gw_color_init_from_hex(&self->normal, "3d3d3d");
+    gw_color_init_from_hex(&self->mdgray, "4a4a4a");
+    gw_color_init_from_hex(&self->dkgray, "666666");
+    gw_color_init_from_hex(&self->dkblue, "4464ac"); /* selected signal bg */
+    gw_color_init_from_hex(&self->brkred, "cc0000"); /* selected comment bg */
+    gw_color_init_from_hex(&self->ltblue, "5dbebb"); /* selected shadowed bg */
+    gw_color_init_from_hex(&self->gmstrd, "7d8104"); /* selected group bg */
+
+    return self;
+}

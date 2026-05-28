@@ -291,6 +291,8 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
     GwSignalListColors *colors = gw_color_theme_get_signal_list_colors(GLOBALS->color_theme);
     if (GLOBALS->black_and_white) {
         colors = gw_signal_list_colors_new_black_and_white();
+    } else if (GLOBALS->use_dark) {
+        colors = gw_signal_list_colors_new_dark();
     }
 
     gint page_num = gtk_notebook_get_current_page(GTK_NOTEBOOK(GLOBALS->notebook));

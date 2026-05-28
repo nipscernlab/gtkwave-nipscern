@@ -80,6 +80,16 @@
 
 char *gtkwave_argv0_cached = NULL;
 
+static gboolean initial_zoom_fit_idle_cb(gpointer data)
+{
+    (void)data;
+    if (GLOBALS && GLOBALS->wavewidth > 1) {
+        service_zoom_fit(NULL, NULL);
+        GLOBALS->do_initial_zoom_fit_used = 1;
+    }
+    return G_SOURCE_REMOVE;
+}
+
 static void switch_page(GtkNotebook *notebook, gpointer *page, guint page_num, gpointer user_data)
 {
     (void)notebook;
@@ -295,6 +305,8 @@ static void print_help(char *nam)
         "  -5, --sstexclude           specify sst exclusion filter filename\n"
         "  -6, --dark                 set gtk-application-prefer-dark-theme = TRUE\n"
         "  -7, --saveonexit           prompt user to write save file at exit\n"
+        "  -Z, --zoom-fit             zoom to fit the full waveform on startup\n"
+        "  -L, --left-justify         left-justify signal names in the signal panel\n"
         "  -g, --giga                 use gigabyte mempacking when recoding (slower)\n"
         "  -v, --vcd                  use stdin as a VCD dumpfile\n" OUTPUT_GETOPT
         "  --wcp                      enable WCP server\n"
@@ -922,6 +934,8 @@ do_primary_inits:
                                                    {"sstexclude", 1, 0, '5'},
                                                    {"dark", 0, 0, '6'},
                                                    {"saveonexit", 0, 0, '7'},
+                                                   {"zoom-fit", 0, 0, 'Z'},
+                                                   {"left-justify", 0, 0, 'L'},
                                                    {"wcp", 0, 0, 0},
                                                    {"wcp-port", 1, 0, 0},
                                                    {"wcp-remote", 0, 0, 0},
@@ -929,7 +943,7 @@ do_primary_inits:
 
             c = getopt_long(argc,
                             argv,
-                            "zf:Fon:a:r:dl:s:e:c:t:NvVhxX:MD:IgC:O:1:2:34:5:67",
+                            "zf:Fon:a:r:dl:s:e:c:t:NvVhxX:MD:IgC:O:1:2:34:5:67ZL",
                             long_options,
                             &option_index);
 
@@ -1129,6 +1143,14 @@ do_primary_inits:
 
                 case '7':
                     GLOBALS->save_on_exit = TRUE;
+                    break;
+
+                case 'Z':
+                    GLOBALS->do_initial_zoom_fit = 1;
+                    break;
+
+                case 'L':
+                    GLOBALS->left_justify_sigs = ~0;
                     break;
 
                 case 's':
@@ -1824,21 +1846,10 @@ savefile_bail:
 
     gtk_widget_show(GLOBALS->signalwindow);
 
-    if (GLOBALS->loaded_file_type != MISSING_FILE) {
-        GLOBALS->toppanedwindow = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
-        GLOBALS->sstpane = treeboxframe("SST");
-
-        GLOBALS->expanderwindow = gtk_expander_new_with_mnemonic("_SST");
-        gtk_expander_set_expanded(GTK_EXPANDER(GLOBALS->expanderwindow),
-                                  (GLOBALS->sst_expanded == TRUE));
-        if (GLOBALS->toppanedwindow_size_cache) {
-            gtk_paned_set_position(GTK_PANED(GLOBALS->toppanedwindow),
-                                   GLOBALS->toppanedwindow_size_cache);
-            GLOBALS->toppanedwindow_size_cache = 0;
-        }
-        gtk_container_add(GTK_CONTAINER(GLOBALS->expanderwindow), GLOBALS->sstpane);
-        gtk_widget_show(GLOBALS->expanderwindow);
-    }
+    /* SST panel disabled: do not create toppanedwindow/sstpane/expanderwindow */
+    GLOBALS->toppanedwindow = NULL;
+    GLOBALS->sstpane = NULL;
+    GLOBALS->expanderwindow = NULL;
 
     GLOBALS->panedwindow = panedwindow = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     if (GLOBALS->panedwindow_size_cache) {
@@ -1863,11 +1874,7 @@ savefile_bail:
         dnd_setup(GLOBALS->dnd_sigview, FALSE);
     }
 
-    if (GLOBALS->loaded_file_type != MISSING_FILE) {
-        gtk_paned_pack1(GTK_PANED(GLOBALS->toppanedwindow), GLOBALS->expanderwindow, 0, 0);
-        gtk_paned_pack2(GTK_PANED(GLOBALS->toppanedwindow), panedwindow, ~0, 0);
-        gtk_widget_show(GLOBALS->toppanedwindow);
-    }
+    /* SST panel disabled: toppanedwindow is never created; panedwindow used directly */
 
     if (GLOBALS->treeopen_chain_head) {
         struct string_chain_t *t = GLOBALS->treeopen_chain_head;
@@ -2209,6 +2216,9 @@ savefile_bail:
             exit(255);
         }
     } else {
+        if (GLOBALS->do_initial_zoom_fit) {
+            g_idle_add(initial_zoom_fit_idle_cb, NULL);
+        }
         gtk_main();
     }
 

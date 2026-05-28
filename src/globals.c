@@ -1446,13 +1446,15 @@ void reload_into_new_context_2(void)
 
     /* Change SST - if it exists */
     /* XXX need to destroy/free the old tree widgets. */
-    gint pane_pos = gtk_paned_get_position(GLOBALS->sst_vpaned);
-    gtk_widget_hide(GLOBALS->expanderwindow);
-    gtk_container_remove(GTK_CONTAINER(GLOBALS->expanderwindow), GLOBALS->sstpane);
-    GLOBALS->sstpane = treeboxframe("SST");
-    gtk_container_add(GTK_CONTAINER(GLOBALS->expanderwindow), GLOBALS->sstpane);
-    gtk_paned_set_position(GLOBALS->sst_vpaned, pane_pos);
-    gtk_widget_show(GLOBALS->expanderwindow);
+    if (GLOBALS->expanderwindow) {
+        gint pane_pos = gtk_paned_get_position(GLOBALS->sst_vpaned);
+        gtk_widget_hide(GLOBALS->expanderwindow);
+        gtk_container_remove(GTK_CONTAINER(GLOBALS->expanderwindow), GLOBALS->sstpane);
+        GLOBALS->sstpane = treeboxframe("SST");
+        gtk_container_add(GTK_CONTAINER(GLOBALS->expanderwindow), GLOBALS->sstpane);
+        gtk_paned_set_position(GLOBALS->sst_vpaned, pane_pos);
+        gtk_widget_show(GLOBALS->expanderwindow);
+    }
     if (GLOBALS->dnd_sigview) {
         dnd_setup(GLOBALS->dnd_sigview, FALSE);
     }
