@@ -61,6 +61,15 @@ This fork has the following changes on top of upstream:
 4. **New CLI flag `-L` / `--left-justify`** — left-justifies the signal names in the signal panel (instead of the default right-justified layout). This exposes the existing `left_justify_sigs` rcvar (also reachable from the **Edit → Set Left Justify Signals** menu entry) as a command-line option.
    - `src/main.c`: registers the option in `long_options` / `getopt_long`, adds `case 'L'` that sets `GLOBALS->left_justify_sigs`.
 
+5. **Child processes spawned with `CREATE_NO_WINDOW` on Windows** — when `gtkwave.exe` is itself a GUI-subsystem binary (see customization 6 below), any console-subsystem child it spawns would otherwise pop up a stray `cmd`-like window for a fraction of a second. The `CreateProcess` flags at the three call sites below were changed from `0` to `CREATE_NO_WINDOW` so the children stay invisible:
+   - `src/pipeio.c:81-82` — `pipeio_create()`, used for process filters such as `comp2gtkw` (the `^>1 ...exe` lines in `.gtkw` savefiles).
+   - `src/menu.c:2407` — `menu_new_viewer_cleanup()`, the "open a second viewer" helper that re-executes `gtkwave.exe`.
+   - `src/main.c:2431-2432` — `activate_stems_reader()`, the rtlbrowse child launched from a `.stems` file.
+   - `windows.h` and the related symbols are already pulled in via the existing `STARTUPINFO` usage near `pipeio.c:33`, so no new `#include` is needed.
+
+6. **Windows GUI subsystem** — `gtkwave.exe` is linked with `-Wl,--subsystem,windows` so no console window pops up alongside the GUI when launched on Windows. Together with customization 5, this gives a fully GUI-only experience for both `gtkwave` and its child processes.
+   - `src/meson.build`: adds `win_subsystem: 'windows'` to the `gtkwave` executable target (passing the flag via raw `link_args` doesn't work — Meson appends `-Wl,--subsystem,console` *after* user link args, and ld respects the last `--subsystem`).
+
 ### Recommended invocation
 
 To launch GTKWave with dark theme, initial zoom-fit, left-justified signal names, and no SST (matches the current visualization):

@@ -2428,7 +2428,9 @@ void activate_stems_reader(char *stems_name)
 
                 update_time_box();
 
-                rc = CreateProcess(NULL, mylist, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+                rc = CreateProcess(NULL, mylist, NULL, NULL, FALSE,
+                                   CREATE_NO_WINDOW, /* hide console of rtlbrowse child */
+                                   NULL, NULL, &si, &pi);
 
                 if (!rc) {
                     UnmapViewOfFile(GLOBALS->anno_ctx);

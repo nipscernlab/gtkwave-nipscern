@@ -78,7 +78,8 @@ struct pipe_ctx *pipeio_create(char *execappname, char *args)
                              NULL, /* process security attributes */
                              NULL, /* primary thread security attributes */
                              TRUE, /* handles are inherited */
-                             0, /* creation flags */
+                             CREATE_NO_WINDOW, /* hide console of console-subsystem children
+                                                  (comp2gtkw and other process filters) */
                              NULL, /* use parent's environment */
                              NULL, /* use parent's current directory */
                              &siStartInfo, /* STARTUPINFO pointer */

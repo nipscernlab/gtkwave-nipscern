@@ -2404,7 +2404,7 @@ void menu_new_viewer_cleanup(GtkWidget *widget, gpointer data)
                                  NULL, /* process security attributes */
                                  NULL, /* primary thread security attributes */
                                  TRUE, /* handles are inherited */
-                                 0, /* creation flags */
+                                 CREATE_NO_WINDOW, /* hide console of console-subsystem children */
                                  NULL, /* use parent's environment */
                                  NULL, /* use parent's current directory */
                                  &si, /* STARTUPINFO pointer */
