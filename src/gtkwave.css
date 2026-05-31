@@ -1,35 +1,309 @@
+/*
+ * nipscern dark theme - GTK chrome restyled strictly to the Surfer
+ * default (dark) palette (surfer-project/surfer, default_theme.toml).
+ * Loaded at APPLICATION priority on top of Adwaita-dark, so we mostly
+ * re-tint Adwaita's named colors and then refine the key widgets.
+ *
+ * Surfer palette reference:
+ *   foreground   #d4d4d4   border        #282b2d
+ *   primary_ui   #171717   secondary_ui  #0d1317
+ *   canvas       #0b151d   alt_canvas    #1b252d
+ *   selection    #37485e   accent_info   #007acc   accent_error #d2302f
+ */
+
+/* ---- Surfer palette as named colors ---- */
+@define-color surfer_fg          #d4d4d4;
+@define-color surfer_fg_dim      #9aa0a6;
+@define-color surfer_bg          #171717;
+@define-color surfer_bg2         #0d1317;
+@define-color surfer_canvas      #0b151d;
+@define-color surfer_border      #282b2d;
+@define-color surfer_sel         #37485e;
+@define-color surfer_accent      #007acc;
+@define-color surfer_error       #d2302f;
+@define-color surfer_green       #56c126;
+
+/* ---- Re-tint Adwaita's theme colors so the whole UI follows Surfer ---- */
+@define-color theme_bg_color           @surfer_bg;
+@define-color theme_fg_color           @surfer_fg;
+@define-color theme_base_color         @surfer_bg2;
+@define-color theme_text_color         @surfer_fg;
+@define-color theme_selected_bg_color  @surfer_sel;
+@define-color theme_selected_fg_color  #ffffff;
+@define-color theme_unfocused_bg_color     @surfer_bg;
+@define-color theme_unfocused_fg_color     @surfer_fg;
+@define-color theme_unfocused_base_color   @surfer_bg2;
+@define-color theme_unfocused_text_color   @surfer_fg;
+@define-color theme_unfocused_selected_bg_color @surfer_sel;
+@define-color insensitive_bg_color     @surfer_bg;
+@define-color insensitive_fg_color     @surfer_fg_dim;
+@define-color borders                  @surfer_border;
+@define-color unfocused_borders        @surfer_border;
+@define-color warning_color            #e0a000;
+@define-color error_color              @surfer_error;
+@define-color success_color            @surfer_green;
+
+/* ---- Base typography & rhythm ---- */
+* {
+  -GtkWidget-focus-line-width: 1px;
+  outline-color: alpha(@surfer_accent, 0.55);
+}
+
+window, .background {
+  background-color: @surfer_bg;
+  color: @surfer_fg;
+  font-family: "Segoe UI", "Inter", "Cantarell", sans-serif;
+  font-size: 10pt;
+}
+
+/* ---- Menubar / menus ---- */
+menubar,
+.menubar {
+  background-color: @surfer_bg;
+  color: @surfer_fg;
+  border-bottom: 1px solid @surfer_border;
+}
+
+menubar > menuitem {
+  padding: 4px 10px;
+}
+
+menubar > menuitem:hover,
+menuitem:hover {
+  background-color: @surfer_sel;
+  color: #ffffff;
+}
+
+menu,
+.menu,
+.context-menu {
+  background-color: @surfer_bg2;
+  border: 1px solid @surfer_border;
+  padding: 4px 0;
+}
+
+menu menuitem {
+  padding: 5px 12px;
+}
+
+menuitem:disabled {
+  color: @surfer_fg_dim;
+}
+
+separator {
+  background-color: @surfer_border;
+  min-width: 1px;
+  min-height: 1px;
+}
+
+/* ---- Toolbar ---- */
+toolbar {
+  background-color: @surfer_bg;
+  border-bottom: 1px solid @surfer_border;
+  padding: 3px 4px;
+}
+
+toolbar button,
+button {
+  background-image: none;
+  background-color: transparent;
+  color: @surfer_fg;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+toolbar button:hover,
+button:hover {
+  background-color: alpha(@surfer_fg, 0.10);
+  border-color: @surfer_border;
+}
+
+toolbar button:active,
+button:active,
+button:checked {
+  background-color: alpha(@surfer_accent, 0.30);
+  border-color: @surfer_accent;
+}
+
+button:disabled {
+  color: @surfer_fg_dim;
+  background-color: transparent;
+}
+
+/* ---- Entries / spin / combos ---- */
+entry,
+spinbutton,
+combobox button {
+  background-color: @surfer_canvas;
+  color: @surfer_fg;
+  border: 1px solid @surfer_border;
+  border-radius: 6px;
+  padding: 3px 8px;
+  caret-color: @surfer_green;
+}
+
+entry:focus,
+spinbutton:focus-within {
+  border-color: @surfer_accent;
+}
+
+entry selection {
+  background-color: @surfer_sel;
+  color: #ffffff;
+}
+
+/* ---- Notebook tabs ---- */
+notebook > header {
+  background-color: @surfer_bg;
+  border-color: @surfer_border;
+}
+
+notebook > header > tabs > tab {
+  color: @surfer_fg_dim;
+  padding: 5px 12px;
+  border: none;
+}
+
+notebook > header > tabs > tab:checked {
+  color: @surfer_fg;
+  box-shadow: inset 0 -2px @surfer_accent;
+}
+
+/* ---- Tree / list views (hierarchy, SST) ---- */
+treeview.view,
+columnview,
+list {
+  background-color: @surfer_bg;
+  color: @surfer_fg;
+}
+
+treeview.view:selected,
+list row:selected {
+  background-color: @surfer_sel;
+  color: #ffffff;
+}
+
+treeview.view header button {
+  background-color: @surfer_bg2;
+  color: @surfer_fg_dim;
+  border: 1px solid @surfer_border;
+  border-radius: 0;
+}
+
+/* ---- Scrollbars ---- */
+scrollbar {
+  background-color: @surfer_bg;
+}
+
+scrollbar slider {
+  background-color: alpha(@surfer_fg, 0.22);
+  border-radius: 8px;
+  min-width: 8px;
+  min-height: 8px;
+  margin: 2px;
+}
+
+scrollbar slider:hover {
+  background-color: alpha(@surfer_fg, 0.40);
+}
+
+/* ---- Panes / handles ---- */
+paned > separator {
+  background-color: @surfer_border;
+  min-width: 2px;
+  min-height: 2px;
+}
+
+/* ---- Headerbar (CSD title bar - styled for slice 3) ---- */
+headerbar,
+.titlebar {
+  background-color: @surfer_bg2;
+  color: @surfer_fg;
+  border-bottom: 1px solid @surfer_border;
+  padding: 4px 6px;
+  min-height: 32px;
+}
+
+headerbar .title {
+  font-weight: bold;
+  color: @surfer_fg;
+}
+
+/* custom window controls (min / max / close) in the CSD header bar */
+.gw-window-control {
+  background-color: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin: 0 1px;
+  min-width: 28px;
+  min-height: 24px;
+}
+
+.gw-window-control:hover {
+  background-color: alpha(@surfer_fg, 0.12);
+}
+
+.gw-window-control:active {
+  background-color: alpha(@surfer_fg, 0.20);
+}
+
+.gw-close-button:hover {
+  background-color: @surfer_error;
+}
+
+/* ---- Tooltips ---- */
+tooltip {
+  background-color: @surfer_canvas;
+  color: @surfer_fg;
+  border: 1px solid @surfer_border;
+}
+
+/* ====================================================================
+ * gtkwave-specific widgets
+ * ==================================================================== */
+
 .time-display {
-  color: @theme_unfocused_text_color;
-  background: @theme_unfocused_base_color;
-  border: 1px solid @unfocused_borders;
-  padding: 0 8px;
+  color: @surfer_fg;
+  background: @surfer_bg2;
+  border: 1px solid @surfer_border;
+  border-radius: 6px;
+  padding: 2px 10px;
 }
 
 .time-display label.label {
   margin-right: 8px;
+  color: @surfer_fg_dim;
 }
 
 .time-display label.value {
+  font-family: "Cascadia Mono", "Consolas", monospace;
   font-feature-settings: "tnum";
   font-weight: bold;
+  color: @surfer_green;
 }
 
 .time-display label.separator {
-  color: alpha(@theme_unfocused_text_color, 0.4);
+  color: alpha(@surfer_fg, 0.4);
   margin: 0 8px;
 }
 
 GwMouseover {
-	background: black;
-	color: white;
-	font-family: monospace;
-	border: 1px solid grey;
+  background: @surfer_canvas;
+  color: @surfer_fg;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  border: 1px solid @surfer_border;
+  border-radius: 6px;
+  padding: 4px 8px;
 }
 
 GwMouseover .name {
-	font-weight: bold;
+  font-weight: bold;
+  color: @surfer_green;
 }
 
 GwMouseover .flags {
-	font-style: italic;
+  font-style: italic;
+  color: @surfer_fg_dim;
 }

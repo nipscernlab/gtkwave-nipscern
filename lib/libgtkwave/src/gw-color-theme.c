@@ -210,36 +210,46 @@ static void gw_color_theme_class_init(GwColorThemeClass *klass)
 
 static void gw_waveform_colors_init(GwWaveformColors *self)
 {
-    gw_color_init_from_hex(&self->background, "000000"); /* black */
-    gw_color_init_from_hex(&self->grid, "202070"); /* dark dark blue */
-    gw_color_init_from_hex(&self->grid2, "6a5acd"); /* slate blue */
-    gw_color_init_from_hex(&self->value_text, "ffffff"); /* white */
+    /*
+     * nipscern: waveform canvas palette ported strictly from Surfer's
+     * default (dark) theme - default_theme.toml in surfer-project/surfer.
+     *   canvas bg      #0b151d     foreground   #d4d4d4
+     *   ticks/grid     #222222     cursor       #b63935
+     *   variable_*     green #56c126, undef #f44747, highimp #c9e124,
+     *                  dontcare #4040ff, weak #808080
+     */
+    gw_color_init_from_hex(&self->background, "0b151d"); /* surfer canvas bg */
+    gw_color_init_from_hex(&self->grid, "1b252d"); /* surfer alt_background (subtle grid) */
+    gw_color_init_from_hex(&self->grid2, "222222"); /* surfer ticks (very subtle) */
+    gw_color_init_from_hex(&self->value_text, "d4d4d4"); /* surfer foreground */
 
-    gw_color_init_from_hex(&self->marker_primary, "ff8080"); /* pink */
-    gw_color_init_from_hex(&self->marker_baseline, "ffffff"); /* white */
-    gw_color_init_from_hex(&self->marker_named, "ffff80"); /* light yellow */
+    gw_color_init_from_hex(&self->marker_primary, "b63935"); /* surfer cursor */
+    gw_color_init_from_hex(&self->marker_baseline, "808080"); /* surfer measure/gray */
+    gw_color_init_from_hex(&self->marker_named, "ffd602"); /* surfer annotation */
 
-    gw_color_init_from_hex(&self->stroke_h, "79f6f2"); /* light light blue */
-    gw_color_init_from_hex(&self->stroke_l, "5dbebb"); /* light blue */
-    gw_color_init_from_hex(&self->stroke_1, "00ff00"); /* green */
-    gw_color_init_from_hex(&self->stroke_0, "008000"); /* dark green */
-    gw_color_init_from_hex(&self->stroke_z, "c0c000"); /* mustard */
-    gw_color_init_from_hex(&self->stroke_x, "ff0000"); /* red */
-    gw_color_init_from_hex(&self->stroke_u, "cc0000"); /* brick */
-    gw_color_init_from_hex(&self->stroke_w, "79f6f2"); /* light light blue */
-    gw_color_init_from_hex(&self->stroke_dash, "edf508"); /* yellow */
-    gw_color_init_from_hex(&self->stroke_transition, "00c000"); /* medium green */
-    gw_color_init_from_hex(&self->stroke_vector, "00ff00"); /* green */
+    /* digital trace: uniform green like Surfer (0/1/edges share one color) */
+    gw_color_init_from_hex(&self->stroke_1, "56c126"); /* variable_default */
+    gw_color_init_from_hex(&self->stroke_0, "56c126");
+    gw_color_init_from_hex(&self->stroke_h, "56c126");
+    gw_color_init_from_hex(&self->stroke_l, "56c126");
+    gw_color_init_from_hex(&self->stroke_transition, "56c126");
+    gw_color_init_from_hex(&self->stroke_vector, "56c126");
+    gw_color_init_from_hex(&self->stroke_z, "c9e124"); /* variable_highimp */
+    gw_color_init_from_hex(&self->stroke_x, "f44747"); /* variable_undef */
+    gw_color_init_from_hex(&self->stroke_u, "d2302f"); /* accent_error */
+    gw_color_init_from_hex(&self->stroke_w, "808080"); /* variable_weak */
+    gw_color_init_from_hex(&self->stroke_dash, "4040ff"); /* variable_dontcare */
 
-    gw_color_init_from_hex(&self->fill_h, "4ca09d"); /* dark dark blue */
-    gw_color_init_from_hex(&self->fill_1, "004d00"); /* dark dark green */
-    gw_color_init_from_hex(&self->fill_x, "400000"); /* dark maroon */
-    gw_color_init_from_hex(&self->fill_u, "200000"); /* dark maroon */
-    gw_color_init_from_hex(&self->fill_w, "3f817f"); /* dark blue-green */
-    gw_color_init_from_hex(&self->fill_dash, "7d8104"); /* green mustard */
+    /* fills: dimmed variants of the strokes (Surfer uses low opacity) */
+    gw_color_init_from_hex(&self->fill_1, "1f4a14"); /* dim green */
+    gw_color_init_from_hex(&self->fill_h, "1f4a14");
+    gw_color_init_from_hex(&self->fill_x, "5a1f1f"); /* dim red */
+    gw_color_init_from_hex(&self->fill_u, "4a1212");
+    gw_color_init_from_hex(&self->fill_w, "333333");
+    gw_color_init_from_hex(&self->fill_dash, "1c1c66"); /* dim blue */
 
-    gw_color_init_from_hex(&self->timebar_text, "ffffff"); /* white */
-    gw_color_init_from_hex(&self->timebar_background, "000000"); /* black */
+    gw_color_init_from_hex(&self->timebar_text, "d4d4d4"); /* surfer foreground */
+    gw_color_init_from_hex(&self->timebar_background, "0d1317"); /* surfer secondary_ui */
 }
 
 static void gw_signal_list_colors_init(GwSignalListColors *self)
@@ -396,16 +406,17 @@ GwSignalListColors *gw_signal_list_colors_new_dark(void)
 {
     GwSignalListColors *self = g_new0(GwSignalListColors, 1);
 
-    gw_color_init_from_hex(&self->white, "2a2a2a");  /* panel background */
-    gw_color_init_from_hex(&self->black, "e6e6e6");  /* text on unselected rows */
-    gw_color_init_from_hex(&self->ltgray, "333333"); /* unselected row bg */
-    gw_color_init_from_hex(&self->normal, "3d3d3d");
-    gw_color_init_from_hex(&self->mdgray, "4a4a4a");
-    gw_color_init_from_hex(&self->dkgray, "666666");
-    gw_color_init_from_hex(&self->dkblue, "4464ac"); /* selected signal bg */
-    gw_color_init_from_hex(&self->brkred, "cc0000"); /* selected comment bg */
-    gw_color_init_from_hex(&self->ltblue, "5dbebb"); /* selected shadowed bg */
-    gw_color_init_from_hex(&self->gmstrd, "7d8104"); /* selected group bg */
+    /* nipscern: signal-name panel ported from Surfer's default dark theme */
+    gw_color_init_from_hex(&self->white, "171717");  /* panel background (primary_ui) */
+    gw_color_init_from_hex(&self->black, "d4d4d4");  /* text on unselected rows (foreground) */
+    gw_color_init_from_hex(&self->ltgray, "171717"); /* unselected row bg */
+    gw_color_init_from_hex(&self->normal, "1d1d1d");
+    gw_color_init_from_hex(&self->mdgray, "0d1317");  /* header bg (secondary_ui) */
+    gw_color_init_from_hex(&self->dkgray, "444444");  /* selected element fg-ish */
+    gw_color_init_from_hex(&self->dkblue, "37485e"); /* selected signal bg (highlight_background) */
+    gw_color_init_from_hex(&self->brkred, "d2302f"); /* selected comment bg (accent_error) */
+    gw_color_init_from_hex(&self->ltblue, "264f6b"); /* selected shadowed bg */
+    gw_color_init_from_hex(&self->gmstrd, "2f6456"); /* selected group bg (surfer clock hl) */
 
     return self;
 }

@@ -90,7 +90,22 @@ On Windows the installed tree at `C:\packs\gtkwave-bin\` ships a launcher that s
 C:\packs\gtkwave-bin\gtkwave.cmd --dark --zoom-fit --left-justify dump.vcd save.gtkw
 ```
 
-### Building on Windows (MSYS2 MINGW64)
+### Building on Windows (one click)
+
+Run [`build-windows.bat`](build-windows.bat) from the repo root (double-click or from a terminal).
+It locates MSYS2 (installing it via `winget` if missing), installs the GTK3/GTK4 + meson
+toolchain on first run, builds, installs to `C:\packs\gtkwave-bin`, and generates the
+`gtkwave.cmd` launcher (which sets the DLL search path). No WSL required.
+
+```bat
+build-windows.bat          REM build + install (incremental)
+build-windows.bat clean    REM wipe build\ and rebuild from scratch
+build-windows.bat run      REM build, install and launch gtkwave --dark
+```
+
+Overrides: `GTKWAVE_MSYS2` (MSYS2 path), `GTKWAVE_PREFIX` (install prefix).
+
+### Building on Windows (manual, MSYS2 MINGW64)
 
 The upstream README only covers Linux/macOS. On Windows with MSYS2 at `C:\packs\msys64`, install the toolchain inside an MSYS2 MINGW64 shell:
 

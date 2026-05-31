@@ -8,29 +8,56 @@
     <gresource prefix="/io/github/gtkwave/GTKWave">
         <file>gtkwave.css</file>
     </gresource>
-    <gresource prefix="/io/github/gtkwave/GTKWave/icons/16x16/actions">
-        <file alias="gtkwave-hierarchy-module.png">../share/icons/old_icons/gtkwave-old-chart_organisation.png</file>
-        <file alias="gtkwave-hierarchy-task.png">../share/icons/old_icons/gtkwave-old-cog.png</file>
-        <file alias="gtkwave-hierarchy-function.png">../share/icons/old_icons/gtkwave-old-chart_line.png</file>
-        <file alias="gtkwave-hierarchy-begin.png">../share/icons/old_icons/gtkwave-old-flag_green.png</file>
-        <file alias="gtkwave-hierarchy-fork.png">../share/icons/old_icons/gtkwave-old-arrow_divide.png</file>
-        <file alias="gtkwave-hierarchy-interface.png">../share/icons/old_icons/gtkwave-old-arrow_inout.png</file>
-        <file alias="gtkwave-hierarchy-svpackage.png">../share/icons/old_icons/gtkwave-old-package.png</file>
-        <file alias="gtkwave-hierarchy-program.png">../share/icons/old_icons/gtkwave-old-application.png</file>
-        <file alias="gtkwave-hierarchy-class.png">../share/icons/old_icons/gtkwave-old-plugin.png</file>
-        <file alias="gtkwave-hierarchy-design.png">../share/icons/old_icons/gtkwave-old-database.png</file>
-        <file alias="gtkwave-hierarchy-block.png">../share/icons/old_icons/gtkwave-old-brick.png</file>
-        <file alias="gtkwave-hierarchy-generateif.png">../share/icons/old_icons/gtkwave-old-arrow_switch.png</file>
-        <file alias="gtkwave-hierarchy-generatefor.png">../share/icons/old_icons/gtkwave-old-arrow_rotate_clockwise.png</file>
-        <file alias="gtkwave-hierarchy-instance.png">../share/icons/old_icons/gtkwave-old-component.png</file>
-        <file alias="gtkwave-hierarchy-package.png">../share/icons/old_icons/gtkwave-old-box.png</file>
-        <file alias="gtkwave-hierarchy-signal.png">../share/icons/old_icons/gtkwave-old-signal.png</file>
-        <file alias="gtkwave-hierarchy-portin.png">../share/icons/old_icons/gtkwave-old-door_in.png</file>
-        <file alias="gtkwave-hierarchy-portout.png">../share/icons/old_icons/gtkwave-old-door_out.png</file>
-        <file alias="gtkwave-hierarchy-portinout.png">../share/icons/old_icons/gtkwave-old-door_open.png</file>
-        <file alias="gtkwave-hierarchy-record.png">../share/icons/old_icons/gtkwave-old-cd.png</file>
-        <file alias="gtkwave-hierarchy-generate.png">../share/icons/old_icons/gtkwave-old-arrow_redo.png</file>
-        <file alias="gtkwave-hierarchy-linkage.png">../share/icons/old_icons/gtkwave-old-link.png</file>
-        <file alias="gtkwave-hierarchy-buffer.png">../share/icons/old_icons/gtkwave-old-extension.png</file>
+    <!--
+        nipscern: modern Phosphor icon set (https://phosphoricons.com, MIT).
+        SVGs are pre-recolored for the Surfer dark theme and loaded directly
+        from these resource paths (see pixmaps.c and main.c build_toolbar).
+    -->
+    <gresource prefix="/io/github/gtkwave/GTKWave/icons/phosphor">
+        <!-- window controls (custom CSD title bar) -->
+        <file alias="win-minimize.svg">../share/icons/phosphor/win-minimize.svg</file>
+        <file alias="win-maximize.svg">../share/icons/phosphor/win-maximize.svg</file>
+        <file alias="win-restore.svg">../share/icons/phosphor/win-restore.svg</file>
+        <file alias="win-close.svg">../share/icons/phosphor/win-close.svg</file>
+        <!-- toolbar -->
+        <file alias="edit-cut.svg">../share/icons/phosphor/edit-cut.svg</file>
+        <file alias="edit-copy.svg">../share/icons/phosphor/edit-copy.svg</file>
+        <file alias="edit-paste.svg">../share/icons/phosphor/edit-paste.svg</file>
+        <file alias="zoom-fit-best.svg">../share/icons/phosphor/zoom-fit-best.svg</file>
+        <file alias="zoom-in.svg">../share/icons/phosphor/zoom-in.svg</file>
+        <file alias="zoom-out.svg">../share/icons/phosphor/zoom-out.svg</file>
+        <file alias="edit-undo.svg">../share/icons/phosphor/edit-undo.svg</file>
+        <file alias="go-first.svg">../share/icons/phosphor/go-first.svg</file>
+        <file alias="go-last.svg">../share/icons/phosphor/go-last.svg</file>
+        <file alias="go-previous.svg">../share/icons/phosphor/go-previous.svg</file>
+        <file alias="go-next.svg">../share/icons/phosphor/go-next.svg</file>
+        <file alias="view-refresh.svg">../share/icons/phosphor/view-refresh.svg</file>
+        <!-- hierarchy: structure (blue) -->
+        <file alias="hier-module.svg">../share/icons/phosphor/hier-module.svg</file>
+        <file alias="hier-instance.svg">../share/icons/phosphor/hier-instance.svg</file>
+        <file alias="hier-block.svg">../share/icons/phosphor/hier-block.svg</file>
+        <file alias="hier-design.svg">../share/icons/phosphor/hier-design.svg</file>
+        <file alias="hier-package.svg">../share/icons/phosphor/hier-package.svg</file>
+        <file alias="hier-svpackage.svg">../share/icons/phosphor/hier-svpackage.svg</file>
+        <!-- hierarchy: signals/ports (green) -->
+        <file alias="hier-signal.svg">../share/icons/phosphor/hier-signal.svg</file>
+        <file alias="hier-portin.svg">../share/icons/phosphor/hier-portin.svg</file>
+        <file alias="hier-portout.svg">../share/icons/phosphor/hier-portout.svg</file>
+        <file alias="hier-portinout.svg">../share/icons/phosphor/hier-portinout.svg</file>
+        <file alias="hier-buffer.svg">../share/icons/phosphor/hier-buffer.svg</file>
+        <file alias="hier-linkage.svg">../share/icons/phosphor/hier-linkage.svg</file>
+        <!-- hierarchy: behavioral (orange/pink) -->
+        <file alias="hier-task.svg">../share/icons/phosphor/hier-task.svg</file>
+        <file alias="hier-function.svg">../share/icons/phosphor/hier-function.svg</file>
+        <file alias="hier-program.svg">../share/icons/phosphor/hier-program.svg</file>
+        <file alias="hier-class.svg">../share/icons/phosphor/hier-class.svg</file>
+        <file alias="hier-interface.svg">../share/icons/phosphor/hier-interface.svg</file>
+        <file alias="hier-record.svg">../share/icons/phosphor/hier-record.svg</file>
+        <!-- hierarchy: control (yellow) -->
+        <file alias="hier-begin.svg">../share/icons/phosphor/hier-begin.svg</file>
+        <file alias="hier-fork.svg">../share/icons/phosphor/hier-fork.svg</file>
+        <file alias="hier-generateif.svg">../share/icons/phosphor/hier-generateif.svg</file>
+        <file alias="hier-generatefor.svg">../share/icons/phosphor/hier-generatefor.svg</file>
+        <file alias="hier-generate.svg">../share/icons/phosphor/hier-generate.svg</file>
     </gresource>
 </gresources>

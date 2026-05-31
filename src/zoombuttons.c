@@ -47,6 +47,146 @@ void fix_wavehadj(void)
     }
 }
 
+/* ====================================================================
+ * nipscern: animated zoom (acceleration/deceleration easing).
+ *
+ * Zoom in/out used to jump the zoom level by one step instantly. Instead we
+ * interpolate the (fractional) zoom from its current value to the target over
+ * a short duration using an ease-out curve, driven by the widget frame clock
+ * so it tracks the monitor refresh (smooth at high fps). Each frame we apply
+ * the intermediate zoom and force a waveform redraw.
+ *
+ * Honest limitation: the waveform is CPU/Cairo rendered, so the achievable fps
+ * depends on the trace size - this is smooth on typical traces but cannot be
+ * guaranteed at 120 fps on very large ones.
+ * ==================================================================== */
+
+static gboolean gw_zoom_animate_enabled = TRUE;
+static const gint64 GW_ZOOM_ANIM_DURATION_US = 150000; /* 150 ms */
+
+static struct
+{
+    gboolean active;
+    gdouble from;
+    gdouble to;
+    gdouble current;
+    GwTime middle;
+    gboolean do_center;
+    gint64 start_us;
+    guint tick_id;
+    GtkWidget *widget;
+} gw_zoom_anim;
+
+static gdouble gw_ease_out_cubic(gdouble t)
+{
+    gdouble u = 1.0 - t;
+    return 1.0 - (u * u * u);
+}
+
+/* Apply a (possibly fractional) zoom level, re-centering the viewport on
+ * `middle`, then force the waveform/scrollbar to refresh. */
+static void gw_zoom_apply(gdouble zoom, GwTime middle, gboolean do_center)
+{
+    calczoom(zoom);
+
+    if (do_center) {
+        GwTime width = (GwTime)(((gdouble)GLOBALS->wavewidth) * GLOBALS->nspx);
+        GLOBALS->tims.start = time_trunc(middle - (width / 2));
+        if (GLOBALS->tims.start + width > GLOBALS->tims.last) {
+            GLOBALS->tims.start = time_trunc(GLOBALS->tims.last - width);
+        }
+        if (GLOBALS->tims.start < GLOBALS->tims.first) {
+            GLOBALS->tims.start = GLOBALS->tims.first;
+        }
+        gtk_adjustment_set_value(GTK_ADJUSTMENT(GLOBALS->wave_hslider),
+                                 GLOBALS->tims.timecache = GLOBALS->tims.start);
+    } else {
+        GLOBALS->tims.timecache = 0;
+    }
+
+    fix_wavehadj();
+    g_signal_emit_by_name(GTK_ADJUSTMENT(GLOBALS->wave_hslider), "changed");
+    g_signal_emit_by_name(GTK_ADJUSTMENT(GLOBALS->wave_hslider), "value_changed");
+}
+
+static gboolean gw_zoom_anim_tick(GtkWidget *widget, GdkFrameClock *frame_clock, gpointer user_data)
+{
+    (void)widget;
+    (void)user_data;
+
+    gint64 now = gdk_frame_clock_get_frame_time(frame_clock);
+    gdouble t = (gdouble)(now - gw_zoom_anim.start_us) / (gdouble)GW_ZOOM_ANIM_DURATION_US;
+
+    if (t >= 1.0) {
+        gw_zoom_anim.current = gw_zoom_anim.to;
+        GLOBALS->tims.zoom = gw_zoom_anim.to;
+        gw_zoom_apply(gw_zoom_anim.to, gw_zoom_anim.middle, gw_zoom_anim.do_center);
+        gw_zoom_anim.active = FALSE;
+        gw_zoom_anim.tick_id = 0;
+        return G_SOURCE_REMOVE;
+    }
+
+    gdouble eased = gw_ease_out_cubic(t);
+    gdouble z = gw_zoom_anim.from + (gw_zoom_anim.to - gw_zoom_anim.from) * eased;
+    gw_zoom_anim.current = z;
+    GLOBALS->tims.zoom = z;
+    gw_zoom_apply(z, gw_zoom_anim.middle, gw_zoom_anim.do_center);
+    return G_SOURCE_CONTINUE;
+}
+
+/* Animate the zoom to `target`, centering on `middle`. Falls back to an
+ * instant apply when animation is disabled or no realized window exists. */
+static void gw_zoom_animate_to(gdouble target, GwTime middle, gboolean do_center)
+{
+    gdouble from = gw_zoom_anim.active ? gw_zoom_anim.current : (gdouble)GLOBALS->tims.zoom;
+    GtkWidget *widget = GLOBALS->mainwindow;
+
+    if (!gw_zoom_animate_enabled || widget == NULL || !gtk_widget_get_realized(widget)) {
+        GLOBALS->tims.zoom = target;
+        gw_zoom_apply(target, middle, do_center);
+        return;
+    }
+
+    if (gw_zoom_anim.active && gw_zoom_anim.tick_id != 0 && gw_zoom_anim.widget != NULL) {
+        gtk_widget_remove_tick_callback(gw_zoom_anim.widget, gw_zoom_anim.tick_id);
+    }
+
+    GdkFrameClock *clock = gtk_widget_get_frame_clock(widget);
+
+    gw_zoom_anim.active = TRUE;
+    gw_zoom_anim.from = from;
+    gw_zoom_anim.to = target;
+    gw_zoom_anim.current = from;
+    gw_zoom_anim.middle = middle;
+    gw_zoom_anim.do_center = do_center;
+    gw_zoom_anim.widget = widget;
+    gw_zoom_anim.start_us =
+        (clock != NULL) ? gdk_frame_clock_get_frame_time(clock) : g_get_monotonic_time();
+    gw_zoom_anim.tick_id = gtk_widget_add_tick_callback(widget, gw_zoom_anim_tick, NULL, NULL);
+}
+
+/* Compute the center to keep fixed for a zoom step, honouring do_zoom_center
+ * and the primary marker (mirrors the original zoom in/out logic). */
+static GwTime gw_zoom_center_point(void)
+{
+    GwMarker *primary_marker = gw_project_get_primary_marker(GLOBALS->project);
+    GwTime primary_pos = gw_marker_get_position(primary_marker);
+
+    if (!gw_marker_is_enabled(primary_marker) || primary_pos < GLOBALS->tims.first ||
+        primary_pos > GLOBALS->tims.last) {
+        if (GLOBALS->tims.end > GLOBALS->tims.last) {
+            GLOBALS->tims.end = GLOBALS->tims.last;
+        }
+        GwTime middle = (GLOBALS->tims.start / 2) + (GLOBALS->tims.end / 2);
+        if ((GLOBALS->tims.start & 1) && (GLOBALS->tims.end & 1)) {
+            middle++;
+        }
+        return middle;
+    }
+
+    return primary_pos;
+}
+
 void service_zoom_left(GtkWidget *text, gpointer data)
 {
     (void)text;
@@ -83,48 +223,14 @@ void service_zoom_out(GtkWidget *text, gpointer data)
     (void)text;
     (void)data;
 
-    GwTime middle = 0, width;
-    GwMarker *primary_marker = gw_project_get_primary_marker(GLOBALS->project);
-    GwTime primary_pos = gw_marker_get_position(primary_marker);
+    gboolean do_center = GLOBALS->do_zoom_center;
+    GwTime middle = do_center ? gw_zoom_center_point() : 0;
 
-    if (GLOBALS->do_zoom_center) {
-        if (!gw_marker_is_enabled(primary_marker) || primary_pos < GLOBALS->tims.first ||
-            primary_pos > GLOBALS->tims.last) {
-            if (GLOBALS->tims.end > GLOBALS->tims.last) {
-                GLOBALS->tims.end = GLOBALS->tims.last;
-            }
-            middle = (GLOBALS->tims.start / 2) + (GLOBALS->tims.end / 2);
-            if ((GLOBALS->tims.start & 1) && (GLOBALS->tims.end & 1)) {
-                middle++;
-            }
-        } else {
-            middle = primary_pos;
-        }
-    }
-
+    /* base off the in-flight target (if any) so rapid clicks chain cleanly */
+    gdouble base = gw_zoom_anim.active ? gw_zoom_anim.to : (gdouble)GLOBALS->tims.zoom;
     GLOBALS->tims.prevzoom = GLOBALS->tims.zoom;
 
-    GLOBALS->tims.zoom--;
-    calczoom(GLOBALS->tims.zoom);
-
-    if (GLOBALS->do_zoom_center) {
-        width = (GwTime)(((gdouble)GLOBALS->wavewidth) * GLOBALS->nspx);
-        GLOBALS->tims.start = time_trunc(middle - (width / 2));
-        if (GLOBALS->tims.start + width > GLOBALS->tims.last)
-            GLOBALS->tims.start = time_trunc(GLOBALS->tims.last - width);
-        if (GLOBALS->tims.start < GLOBALS->tims.first)
-            GLOBALS->tims.start = GLOBALS->tims.first;
-        gtk_adjustment_set_value(GTK_ADJUSTMENT(GLOBALS->wave_hslider),
-                                 GLOBALS->tims.timecache = GLOBALS->tims.start);
-    } else {
-        GLOBALS->tims.timecache = 0;
-    }
-
-    fix_wavehadj();
-
-    g_signal_emit_by_name(GTK_ADJUSTMENT(GLOBALS->wave_hslider), "changed"); /* force zoom update */
-    g_signal_emit_by_name(GTK_ADJUSTMENT(GLOBALS->wave_hslider),
-                          "value_changed"); /* force zoom update */
+    gw_zoom_animate_to(base - 1.0, middle, do_center);
 
     DEBUG(printf("Zoombuttons out\n"));
 }
@@ -134,51 +240,17 @@ void service_zoom_in(GtkWidget *text, gpointer data)
     (void)text;
     (void)data;
 
-    GwMarker *primary_marker = gw_project_get_primary_marker(GLOBALS->project);
-    GwTime primary_pos = gw_marker_get_position(primary_marker);
+    /* base off the in-flight target (if any) so rapid clicks chain cleanly */
+    gdouble base = gw_zoom_anim.active ? gw_zoom_anim.to : (gdouble)GLOBALS->tims.zoom;
 
-    if (GLOBALS->tims.zoom < 0) /* otherwise it's ridiculous and can cause */
-    { /* overflow problems in the scope          */
-        GwTime middle = 0, width;
-
-        if (GLOBALS->do_zoom_center) {
-            if (!gw_marker_is_enabled(primary_marker) || primary_pos < GLOBALS->tims.first ||
-                primary_pos > GLOBALS->tims.last) {
-                if (GLOBALS->tims.end > GLOBALS->tims.last)
-                    GLOBALS->tims.end = GLOBALS->tims.last;
-                middle = (GLOBALS->tims.start / 2) + (GLOBALS->tims.end / 2);
-                if ((GLOBALS->tims.start & 1) && (GLOBALS->tims.end & 1))
-                    middle++;
-            } else {
-                middle = primary_pos;
-            }
-        }
+    if (base < 0) /* otherwise it's ridiculous and can cause overflow in the scope */
+    {
+        gboolean do_center = GLOBALS->do_zoom_center;
+        GwTime middle = do_center ? gw_zoom_center_point() : 0;
 
         GLOBALS->tims.prevzoom = GLOBALS->tims.zoom;
 
-        GLOBALS->tims.zoom++;
-
-        calczoom(GLOBALS->tims.zoom);
-
-        if (GLOBALS->do_zoom_center) {
-            width = (GwTime)(((gdouble)GLOBALS->wavewidth) * GLOBALS->nspx);
-            GLOBALS->tims.start = time_trunc(middle - (width / 2));
-            if (GLOBALS->tims.start + width > GLOBALS->tims.last)
-                GLOBALS->tims.start = time_trunc(GLOBALS->tims.last - width);
-            if (GLOBALS->tims.start < GLOBALS->tims.first)
-                GLOBALS->tims.start = GLOBALS->tims.first;
-            gtk_adjustment_set_value(GTK_ADJUSTMENT(GLOBALS->wave_hslider),
-                                     GLOBALS->tims.timecache = GLOBALS->tims.start);
-        } else {
-            GLOBALS->tims.timecache = 0;
-        }
-
-        fix_wavehadj();
-
-        g_signal_emit_by_name(GTK_ADJUSTMENT(GLOBALS->wave_hslider),
-                              "changed"); /* force zoom update */
-        g_signal_emit_by_name(GTK_ADJUSTMENT(GLOBALS->wave_hslider),
-                              "value_changed"); /* force zoom update */
+        gw_zoom_animate_to(base + 1.0, middle, do_center);
 
         DEBUG(printf("Zoombuttons in\n"));
     }

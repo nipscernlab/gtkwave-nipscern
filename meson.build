@@ -233,9 +233,12 @@ subdir('examples')
 subdir('doc')
 subdir('contrib')
 
+# nipscern: the desktop/mime database updates are Linux desktop-integration
+# steps that fail (and are meaningless) on Windows - skip them there.
+is_windows = host_machine.system() == 'windows'
 gnome.post_install(
-    update_mime_database: get_option('update_mime_database'),
-    update_desktop_database: true,
+    update_mime_database: not is_windows and get_option('update_mime_database'),
+    update_desktop_database: not is_windows,
     gtk_update_icon_cache: true,
 )
 

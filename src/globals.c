@@ -641,7 +641,7 @@ static const struct Global globals_base_values = {
     0, /* wavearea_drag_active */
 #endif
     -1, /* use_gestures */
-    FALSE, /*use_dark */
+    TRUE, /*use_dark - nipscern: dark theme is the default */
     FALSE, /*save_on_exit */
 
     /*

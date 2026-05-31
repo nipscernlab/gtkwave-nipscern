@@ -216,30 +216,35 @@ static void close_all_fst_files(void) /* so mingw does delete of reader tempfile
 
 void wave_gtk_window_set_title(GtkWindow *window, const gchar *title, int typ, int pct)
 {
-    if (window && title) {
-        switch (typ) {
-            case WAVE_SET_TITLE_MODIFIED: {
-                const char *pfx = "[Modified] ";
-                char *t = g_alloca(strlen(pfx) + strlen(title) + 1);
-
-                strcpy(t, pfx);
-                strcat(t, title);
-                gtk_window_set_title(window, t);
-            } break;
-
-            case WAVE_SET_TITLE_LOADING: {
-                char *t = g_alloca(64 + strlen(title) + 1); /* make extra long */
-
-                sprintf(t, "[Loading %d%%] %s", pct, title);
-                gtk_window_set_title(window, t);
-            } break;
-
-            case WAVE_SET_TITLE_NONE:
-            default:
-                gtk_window_set_title(window, title);
-                break;
-        }
+    if (!window || !title) {
+        return;
     }
+
+    char *t = NULL;
+    switch (typ) {
+        case WAVE_SET_TITLE_MODIFIED:
+            t = g_strdup_printf("[Modified] %s", title);
+            break;
+
+        case WAVE_SET_TITLE_LOADING:
+            t = g_strdup_printf("[Loading %d%%] %s", pct, title);
+            break;
+
+        case WAVE_SET_TITLE_NONE:
+        default:
+            t = g_strdup(title);
+            break;
+    }
+
+    gtk_window_set_title(window, t);
+
+    /* nipscern: keep the custom CSD header bar (if present) in sync. */
+    GtkWidget *titlebar = gtk_window_get_titlebar(window);
+    if (titlebar != NULL && GTK_IS_HEADER_BAR(titlebar)) {
+        gtk_header_bar_set_title(GTK_HEADER_BAR(titlebar), t);
+    }
+
+    g_free(t);
 }
 
 static void print_help(char *nam)
@@ -462,13 +467,89 @@ static gboolean window_key_press_event(GtkWidget *widget, GdkEventKey *event)
     return TRUE;
 }
 
+/* nipscern: build a toolbar image from the modern Phosphor SVG set bundled in
+ * the gresource (keyed by the freedesktop-style name passed at the call site),
+ * falling back to the system icon theme if the resource is missing. */
+#define GW_TOOLBAR_ICON_SIZE 20
+
+static GtkWidget *gw_phosphor_image(const gchar *name)
+{
+    char *path =
+        g_strdup_printf("/io/github/gtkwave/GTKWave/icons/phosphor/%s.svg", name);
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_resource_at_scale(path,
+                                                              GW_TOOLBAR_ICON_SIZE,
+                                                              GW_TOOLBAR_ICON_SIZE,
+                                                              TRUE,
+                                                              NULL);
+    g_free(path);
+
+    if (pixbuf != NULL) {
+        GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
+        g_object_unref(pixbuf);
+        return image;
+    }
+
+    return gtk_image_new_from_icon_name(name, GTK_ICON_SIZE_BUTTON);
+}
+
+/* ---- nipscern: custom CSD window controls (min / max / close) ----
+ * On Windows GTK3, gtk_header_bar_set_show_close_button() often renders no
+ * window-control buttons, so we draw our own as ordinary buttons with the
+ * Phosphor icon set. These work regardless of the platform's CSD support. */
+static void gw_hb_minimize(GtkButton *button, gpointer window)
+{
+    (void)button;
+    gtk_window_iconify(GTK_WINDOW(window));
+}
+
+static void gw_hb_maximize(GtkButton *button, gpointer window)
+{
+    gboolean was_maximized = gtk_window_is_maximized(GTK_WINDOW(window));
+    if (was_maximized) {
+        gtk_window_unmaximize(GTK_WINDOW(window));
+    } else {
+        gtk_window_maximize(GTK_WINDOW(window));
+    }
+    /* swap the icon to reflect the new state */
+    gtk_button_set_image(button, gw_phosphor_image(was_maximized ? "win-maximize" : "win-restore"));
+    gtk_button_set_always_show_image(button, TRUE);
+}
+
+static void gw_hb_close(GtkButton *button, gpointer window)
+{
+    (void)button;
+    /* go through gtk_window_close so the existing delete-event / save-prompt
+     * handler still runs */
+    gtk_window_close(GTK_WINDOW(window));
+}
+
+static GtkWidget *gw_headerbar_button(const char *icon_name,
+                                      const char *tooltip,
+                                      const char *css_class,
+                                      GCallback callback,
+                                      gpointer window)
+{
+    GtkWidget *button = gtk_button_new();
+    gtk_button_set_image(GTK_BUTTON(button), gw_phosphor_image(icon_name));
+    gtk_button_set_always_show_image(GTK_BUTTON(button), TRUE);
+    gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
+    gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
+    gtk_widget_set_tooltip_text(button, tooltip);
+    gtk_style_context_add_class(gtk_widget_get_style_context(button), "gw-window-control");
+    if (css_class != NULL) {
+        gtk_style_context_add_class(gtk_widget_get_style_context(button), css_class);
+    }
+    g_signal_connect(button, "clicked", callback, window);
+    return button;
+}
+
 static GtkWidget *toolbar_append_button(GtkWidget *toolbar,
                                         const gchar *stock_id,
                                         const char *tooltip_text,
                                         GCallback callback,
                                         gpointer user_data)
 {
-    GtkWidget *icon_widget = gtk_image_new_from_icon_name(stock_id, GTK_ICON_SIZE_BUTTON);
+    GtkWidget *icon_widget = gw_phosphor_image(stock_id);
     GtkToolItem *button = gtk_tool_button_new(icon_widget, NULL);
     gtk_tool_item_set_tooltip_text(button, tooltip_text);
 
@@ -1705,6 +1786,41 @@ savefile_bail:
 
             GLOBALS->mainwindow = gtk_window_new(
                 GLOBALS->disable_window_manager ? GTK_WINDOW_POPUP : GTK_WINDOW_TOPLEVEL);
+
+            /* nipscern: custom client-side-decoration title bar (Surfer dark).
+             * Replaces the native Windows title bar with a GtkHeaderBar that
+             * carries the integrated window controls. Skipped in the
+             * WM-disabled popup/embedded modes where there is no titlebar. */
+            if (!GLOBALS->disable_window_manager) {
+                GtkWidget *headerbar = gtk_header_bar_new();
+                /* our own controls instead of the (broken-on-Windows) CSD ones */
+                gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(headerbar), FALSE);
+                gtk_header_bar_set_title(GTK_HEADER_BAR(headerbar), "GTKWave");
+
+                GtkWidget *btn_min = gw_headerbar_button("win-minimize",
+                                                         "Minimize",
+                                                         NULL,
+                                                         G_CALLBACK(gw_hb_minimize),
+                                                         GLOBALS->mainwindow);
+                GtkWidget *btn_max = gw_headerbar_button("win-maximize",
+                                                         "Maximize",
+                                                         NULL,
+                                                         G_CALLBACK(gw_hb_maximize),
+                                                         GLOBALS->mainwindow);
+                GtkWidget *btn_close = gw_headerbar_button("win-close",
+                                                           "Close",
+                                                           "gw-close-button",
+                                                           G_CALLBACK(gw_hb_close),
+                                                           GLOBALS->mainwindow);
+
+                /* pack_end stacks right-to-left -> visual order: min max close */
+                gtk_header_bar_pack_end(GTK_HEADER_BAR(headerbar), btn_close);
+                gtk_header_bar_pack_end(GTK_HEADER_BAR(headerbar), btn_max);
+                gtk_header_bar_pack_end(GTK_HEADER_BAR(headerbar), btn_min);
+
+                gtk_window_set_titlebar(GTK_WINDOW(GLOBALS->mainwindow), headerbar);
+            }
+
             wave_gtk_window_set_title(GTK_WINDOW(GLOBALS->mainwindow),
                                       GLOBALS->winname,
                                       GLOBALS->dumpfile_is_modified ? WAVE_SET_TITLE_MODIFIED

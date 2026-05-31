@@ -11,44 +11,66 @@
 #include <config.h>
 #include "pixmaps.h"
 
+/* nipscern: hierarchy icons are modern Phosphor SVGs, pre-recolored for the
+ * Surfer dark theme, loaded directly from the gresource (deterministic, no
+ * dependency on the system icon theme). See the gresource manifest. */
+#define GW_PHOSPHOR_ICON_SIZE 16
+
+static GdkPixbuf *load_hier_icon(const char *name)
+{
+    char *path =
+        g_strdup_printf("/io/github/gtkwave/GTKWave/icons/phosphor/%s.svg", name);
+    GError *error = NULL;
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_resource_at_scale(path,
+                                                              GW_PHOSPHOR_ICON_SIZE,
+                                                              GW_PHOSPHOR_ICON_SIZE,
+                                                              TRUE,
+                                                              &error);
+    if (pixbuf == NULL) {
+        g_warning("could not load hierarchy icon '%s': %s",
+                  path,
+                  error != NULL ? error->message : "unknown error");
+        g_clear_error(&error);
+    }
+    g_free(path);
+    return pixbuf;
+}
+
 GwHierarchyIcons *gw_hierarchy_icons_new(void)
 {
     GwHierarchyIcons *self = g_new0(GwHierarchyIcons, 1);
 
-    GtkIconTheme *theme = gtk_icon_theme_get_default();
-    gtk_icon_theme_add_resource_path (theme, "/io/github/gtkwave/GTKWave/icons");
-
     /* Verilog */
-    self->module = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-module", 16, 0, NULL);
-    self->task = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-task", 16, 0, NULL);
-    self->function = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-function", 16, 0, NULL);
-    self->begin = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-begin", 16, 0, NULL);
-    self->fork = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-fork", 16, 0, NULL);
+    self->module = load_hier_icon("hier-module");
+    self->task = load_hier_icon("hier-task");
+    self->function = load_hier_icon("hier-function");
+    self->begin = load_hier_icon("hier-begin");
+    self->fork = load_hier_icon("hier-fork");
 
     /* SV */
-    self->interface = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-interface", 16, 0, NULL);
-    self->svpackage = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-svpackage", 16, 0, NULL);
-    self->program = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-program", 16, 0, NULL);
-    self->class = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-class", 16, 0, NULL);
-    
-    /* VHDL */
-    self->design = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-design", 16, 0, NULL);
-    self->block = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-block", 16, 0, NULL);
-    self->generateif = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-generateif", 16, 0, NULL);
-    self->generatefor = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-generatefor", 16, 0, NULL);
-    self->instance = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-instance", 16, 0, NULL);
-    self->package = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-package", 16, 0, NULL);
+    self->interface = load_hier_icon("hier-interface");
+    self->svpackage = load_hier_icon("hier-svpackage");
+    self->program = load_hier_icon("hier-program");
+    self->class = load_hier_icon("hier-class");
 
-    self->signal = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-signal", 16, 0, NULL);
-    self->portin = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-portin", 16, 0, NULL);
-    self->portout = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-portout", 16, 0, NULL);
-    self->portinout = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-portinout", 16, 0, NULL);
-    self->buffer = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-buffer", 16, 0, NULL);
-    self->linkage = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-linkage", 16, 0, NULL);
+    /* VHDL */
+    self->design = load_hier_icon("hier-design");
+    self->block = load_hier_icon("hier-block");
+    self->generateif = load_hier_icon("hier-generateif");
+    self->generatefor = load_hier_icon("hier-generatefor");
+    self->instance = load_hier_icon("hier-instance");
+    self->package = load_hier_icon("hier-package");
+
+    self->signal = load_hier_icon("hier-signal");
+    self->portin = load_hier_icon("hier-portin");
+    self->portout = load_hier_icon("hier-portout");
+    self->portinout = load_hier_icon("hier-portinout");
+    self->buffer = load_hier_icon("hier-buffer");
+    self->linkage = load_hier_icon("hier-linkage");
 
     /* FSDB VHDL (on top of GHW's existing) */
-    self->record = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-record", 16, 0, NULL);
-    self->generate = gtk_icon_theme_load_icon(theme, "gtkwave-hierarchy-generate", 16, 0, NULL);
+    self->record = load_hier_icon("hier-record");
+    self->generate = load_hier_icon("hier-generate");
 
     return self;
 }
