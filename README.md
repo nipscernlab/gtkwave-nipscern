@@ -1,5 +1,9 @@
 # GTKWave
 
+> [!WARNING]
+> Archived project. Deactivated on July 17, 2026.
+> This project has been discontinued by the NIPS-CERN lab and no longer receives maintenance, fixes, or new features. The code remains available for historical reference only.
+
 GTKWave is a fully featured GTK+ based wave viewer for Unix and Win32 which reads FST, and GHW files as well as standard Verilog VCD/EVCD files and allows their viewing.
 
 ## Building GTKWave from source
